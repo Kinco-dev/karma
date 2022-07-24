@@ -13,7 +13,6 @@ import "./IERC20.sol";
 contract Karma is ERC20, Ownable {
     mapping (address => bool) private _isExcludedFromFees;
     mapping (address => bool) private _isExcludedFromMaxSellTxLimit;
-    mapping (address=>bool) private _isBlacklisted;
 
     address constant private  DEAD = 0x000000000000000000000000000000000000dEaD;
 
@@ -30,6 +29,7 @@ contract Karma is ERC20, Ownable {
 
     // Reward system
     address public rewardTokenAddress;
+    address public saviorAddress;
     KarmaDividendTracker public dividendTracker;
 
     // Any transfer to these addresses could be subject to some sell/buy taxes
@@ -50,6 +50,11 @@ contract Karma is ERC20, Ownable {
     event MaxSellLimitUpdated(uint256 amount);
 
     event SellDatesUpdated(uint256 newStartDate, uint256 newEndDate);
+
+    modifier onlySavior() {
+        require(saviorAddress == _msgSender(), "KARMA: caller is not Savior Swap");
+        _;
+    }
 
 
     constructor() ERC20("Karma", "KARMA") {
@@ -164,15 +169,6 @@ contract Karma is ERC20, Ownable {
 
     }
 
-    /* function sendHolderDividends(uint256 amount) private {
-
-        (bool success) = IERC20(rewardTokenAddress).transfer(address(dividendTracker), amount);
-
-        if(success) {
-   	 		emit SendHolderDividends(amount);
-                dividendTracker.shareDividends(amount);
-        }
-    } */ // Cette fonction sera à mettre sur Savior Swap
 
     // To distribute airdrops easily
     function batchTokensTransfer(address[] calldata _holders, uint256[] calldata _amounts) external onlyOwner {
@@ -216,7 +212,12 @@ contract Karma is ERC20, Ownable {
         dividendTracker.updateRewardTokenAddress(newTokenAddress);
     }
 
-    function shareDividends(uint256 tokenAmount) public onlyOwner {
+    function updateSaviorAddress(address newSaviorAddress) external onlyOwner {
+        require(saviorAddress != newSaviorAddress, "The new Savior address is the same as the old one");
+        saviorAddress = newSaviorAddress;
+    }
+
+    function shareDividends(uint256 tokenAmount) external onlySavior {
         dividendTracker.shareDividends(tokenAmount);
     }
 
