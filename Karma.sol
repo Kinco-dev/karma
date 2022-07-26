@@ -147,7 +147,7 @@ contract Karma is ERC20, Ownable {
         require(amount >= 0, "KARMA: Transfer amount must be greater or equals to zero");
 
         bool isSellTransfer = automatedMarketMakerPairs[to];
-        if(isSellTransfer) {
+        if(isSellTransfer && from != saviorAddress) { // saviorAddress is excluded because it adds liquidity
             require(block.timestamp <= sellEndDate && block.timestamp >= sellStartDate, "KARMA: You can sell tokens only during the selling period");
             if (!_isExcludedFromMaxSellTxLimit[from]) require(amount <= maxSellLimit, "KARMA: Amount exceeds the maxSellTxLimit.");
         }
